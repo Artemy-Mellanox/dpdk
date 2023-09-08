@@ -971,7 +971,8 @@ mp_request_sync(const char *dst, struct rte_mp_msg *req,
 		 * number of sent messages
 		 */
 		reply->nb_sent--;
-		return 0;
+		rte_errno = ENOTSUP;
+		return 1;
 	}
 
 	tmp = realloc(reply->msgs, sizeof(msg) * (reply->nb_received + 1));
@@ -1026,7 +1027,9 @@ rte_mp_request_sync(struct rte_mp_msg *req, struct rte_mp_reply *reply,
 	/* for secondary process, send request to the primary process only */
 	if (rte_eal_process_type() == RTE_PROC_SECONDARY) {
 		pthread_mutex_lock(&pending_requests.lock);
-		ret = mp_request_sync(eal_mp_socket_path(), req, reply, &end);
+		do {
+			ret = mp_request_sync(eal_mp_socket_path(), req, reply, &end);
+		} while (ret == 1);
 		pthread_mutex_unlock(&pending_requests.lock);
 		goto end;
 	}
@@ -1061,7 +1064,7 @@ rte_mp_request_sync(struct rte_mp_msg *req, struct rte_mp_reply *reply,
 		/* unlocks the mutex while waiting for response,
 		 * locks on receive
 		 */
-		if (mp_request_sync(path, req, reply, &end))
+		if (mp_request_sync(path, req, reply, &end) < 0)
 			goto unlock_end;
 	}
 	ret = 0;
