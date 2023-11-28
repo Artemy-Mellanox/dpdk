@@ -360,7 +360,7 @@ eal_proc_type_detect(void)
 		 * keep that open and don't close it to prevent a race condition
 		 * between multiple opens.
 		 */
-		if (((mem_cfg_fd = open(pathname, O_RDWR)) >= 0) &&
+		if (((mem_cfg_fd = open(pathname, O_RDWR | O_CREAT, 0600)) >= 0) &&
 				(fcntl(mem_cfg_fd, F_SETLK, &wr_lock) < 0))
 			ptype = RTE_PROC_SECONDARY;
 	}
@@ -1375,6 +1375,7 @@ rte_eal_cleanup(void)
 	eal_trace_fini();
 	eal_mp_dev_hotplug_cleanup();
 	rte_eal_alarm_cleanup();
+	rte_eal_memzone_cleanup();
 	/* after this point, any DPDK pointers will become dangling */
 	rte_eal_memory_detach();
 	rte_eal_malloc_heap_cleanup();
